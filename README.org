@@ -1,0 +1,27 @@
+* WASM Rust and custom allocator
+
+Example taken from [[https://radu-matei.com/blog/practical-guide-to-wasm-memory/][Rust article.]]
+
+** Install wasm toolchain
+
+Install rust ~wasm32-unknown-unknown~
+#+begin_src bash
+  rustup target install wasm32-unknown-unknown
+#+end_src
+
+** Compile
+
+#+begin_src bash
+  cargo run --release --target wasm32-unknown-unknown
+#+end_src
+
+** Host
+
+Host the entire project folder with a python server
+#+begin_src bash
+  python3 -m http.server
+#+end_src
+
+** View the results
+
+Visit http://localhost:8000/web/ and open the developer console.
