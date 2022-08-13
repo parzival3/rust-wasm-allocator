@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Rust WASM Demo</title>
+  </head>
+  <body>
+    <h1> Look at the console </h1>
+    <script>
+      let imports = {
+          env: {
+              log_number: (number) => console.log(`Number from Rust: ${number}`)
+          }
+      };
+
+     fetch('../target/wasm32-unknown-unknown/release/wasm-allocator.wasm')
+    .then((response) => response.arrayBuffer())
+    .then((bytes) => WebAssembly.instantiate(bytes, imports))
+    .then((result) => {
+        function copyMemory(data, instance) {
+            var ptr = instance.exports.alloc(data.length);
+            // we are getting the memory of of the wasam instance and use the ptr as an index
+            // in the memory buffer and create an array with length `data.length`
+            var mem = new Uint8Array(instance.exports.memory.buffer, ptr, data.length);
+            mem.set(new Uint8Array(data));
+            return ptr;
+        }
+
+        function arraySum(array, instance) {
+            var ptr = copyMemory(array, instance);
+            var res = instance.exports.array_sum(ptr, array.length);
+            console.log("Result: " + res);
+            console.log(instance);
+
+        }
+
+        function upper(input, instance) {
+            var bytes = new TextEncoder("utf-8").encode(input);
+            var ptr = copyMemory(bytes, instance);
+            var res_ptr = instance.exports.to_upper(ptr, bytes.length);
+            var result = readString(res_ptr, bytes.length, instance);
+            console.log(result);
+            deallocGuestMemory(res_ptr, bytes.length, instance);
+        }
+
+        function deallocGuestMemory(ptr, len, instance) {
+            // call the module's `dealloc` function
+            instance.exports.dealloc(ptr, len);
+        }
+
+        // Read a string from the instance's memory.
+        function readString(ptr, len, instance) {
+            var m = new Uint8Array(instance.exports.memory.buffer, ptr, len);
+            var decoder = new TextDecoder("utf-8");
+            // return a slice of size `len` from the module's
+            // memory, starting at offset `ptr`
+            return decoder.decode(m.slice(0, len));
+        }
+
+        console.log(result.instance);
+        upper("Hello World", result.instance);
+        arraySum([1, 2, 3, 4, 5], result.instance);
+    });
+    </script>
+  </body>
+</html>
